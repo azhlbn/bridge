@@ -37,14 +37,14 @@ const Index = (props) => {
         console.log("Metamask not detected");
         return;
       }
-      // let chainId = await ethereum.request({ method: "eth_chainId" });
-      //
-      // const bnbChainId = "0x38";
-      //
-      // if (chainId !== bnbChainId) {
-      //   alert("You are not connected to BNB Smart Chain!");
-      //   return;
-      // }
+      let chainId = await ethereum.request({ method: "eth_chainId" });
+
+      const bnbChainId = "0x38";
+
+      if (chainId !== bnbChainId) {
+        alert("You are not connected to BNB Smart Chain!");
+        return;
+      }
 
       const accounts = await ethereum.request({
         method: "eth_requestAccounts",
@@ -187,34 +187,5 @@ const Index = (props) => {
   </div>
   )
 }
-
-// export async function getServerSideProps() {
-//
-//   let rate;
-//   let minContrib;
-//   let maxContrib;
-//   let targetAmount;
-//   let raisedBNB;
-//   let raisedTokens;
-//
-//   try {
-//     const tokenName = await tokenContract.name();
-//     await saleContract.targetAmount().then((data) => targetAmount = parseInt(ethers.utils.formatEther(data)))
-//     await saleContract.rate().then((data) => rate = parseInt(ethers.utils.formatUnits(data, 0)))
-//     await saleContract.minContribution().then((data) => minContrib = parseInt(ethers.utils.formatEther(data))+1)
-//     await saleContract.maxContribution().then((data) => maxContrib = parseInt(ethers.utils.formatEther(data)))
-//     await saleContract.raisedBNB().then((data) => raisedBNB = ethers.utils.formatEther(data))
-//     await saleContract.raisedTokens().then((data) => raisedTokens = parseInt(ethers.utils.formatEther(data)))
-//     return {
-//       props: { tokenName, targetAmount, rate, minContrib, maxContrib, raisedTokens, raisedBNB }
-//     };
-//   } catch (error) {
-//     console.error(error);
-//   }
-//
-//   return {
-//     props: {}
-//   };
-// }
 
 export default Index

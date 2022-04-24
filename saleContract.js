@@ -1,7 +1,7 @@
 import provider from './provider'
 import { ethers } from 'ethers'
 
-const contract_address = "0x3aBD64382eDad31A678e28f945512cF015e7a014"
+const contract_address = "0xB5b05eDD43254599F9729cacAc50654c90d2eC75"
 const contract_abi = [
   {
     "inputs": [
@@ -9,11 +9,6 @@ const contract_abi = [
         "internalType": "uint256",
         "name": "_rate",
         "type": "uint256"
-      },
-      {
-        "internalType": "address",
-        "name": "_wallet",
-        "type": "address"
       },
       {
         "internalType": "address",
@@ -84,6 +79,19 @@ const contract_abi = [
     "name": "changeOwner",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "getBalance",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -268,16 +276,16 @@ const contract_abi = [
     "type": "function"
   },
   {
-    "inputs": [],
-    "name": "wallet",
-    "outputs": [
+    "inputs": [
       {
         "internalType": "address",
-        "name": "",
+        "name": "_addr",
         "type": "address"
       }
     ],
-    "stateMutability": "view",
+    "name": "withdrawFunds",
+    "outputs": [],
+    "stateMutability": "nonpayable",
     "type": "function"
   },
   {
