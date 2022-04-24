@@ -13,14 +13,17 @@ const Index = (props) => {
   const [amount, setAmount] = useState()
   const [userBalance, setUserBalance] = useState(0)
   const [address, setAddress] = useState("");
-  const [raisedTokens, setRaisedTokens] = useState(props.raisedTokens)
-  const [raisedBNB, setRaisedBNB] = useState(props.raisedBNB)
-  const [tokenName, setTokenName] = useState(props.tokenName)
+  const [raisedTokens, setRaisedTokens] = useState()
+  const [raisedBNB, setRaisedBNB] = useState()
+  const [tokenName, setTokenName] = useState()
   const [isLoader, setIsLoader] = useState(false)
   const [isChecked, setIsChecked] = useState(false)
   const [isPaid, setIsPaid] = useState(false)
   const [payLoader, setPayLoader] = useState(false)
-  const [rate, setRate] = useState(props.rate)
+  const [rate, setRate] = useState()
+  const [minContrib, setMinContrib] = useState()
+  const [maxContrib, setMaxContrib] = useState()
+  const [targetAmount, setTargetAmount] = useState()
 
   const amountRef = useRef();
 
@@ -104,19 +107,42 @@ const Index = (props) => {
 
   }
 
+  const checkInfoHandler = async () => {
+
+    await tokenContract.name().then((data) => setTokenName(data));
+
+    await saleContract.targetAmount().then((data) => setTargetAmount(parseInt(ethers.utils.formatEther(data))))
+
+    await saleContract.rate().then((data) => setRate(parseInt(ethers.utils.formatUnits(data, 0))))
+
+    await saleContract.minContribution().then((data) => setMinContrib(parseInt(ethers.utils.formatEther(data))+1))
+
+    await saleContract.maxContribution().then((data) =>  setMaxContrib(parseInt(ethers.utils.formatEther(data))))
+
+    await saleContract.raisedBNB().then((data) => setRaisedBNB(ethers.utils.formatEther(data)))
+
+    await saleContract.raisedTokens().then((data) => setRaisedTokens(parseInt(ethers.utils.formatEther(data))))
+
+  }
+
   return (
 
   <div style={{ marginTop: 15 }} className="ui centered cards">
     <div className="ui card" style={{ width: "400px" }}>
     <div className="content" ><strong>Sales info</strong></div>
-      <div className="content">Target amount: { props.targetAmount }</div>
+      <div className="content">Target amount: { targetAmount }</div>
       <div className="content">Raised tokens: { raisedTokens } / Raised BNB: { parseFloat(raisedBNB).toFixed(2) }</div>
       <div className="content">Current price: vPSH = { (1/rate).toFixed(6) } BNB</div>
       <div className="content">
-        <p>Min amount: { props.minContrib }</p>
-        <p>Max amount: { props.maxContrib }</p>
+        <p>Min amount: { minContrib }</p>
+        <p>Max amount: { maxContrib }</p>
       </div>
       <div className="content">Token name: { tokenName }</div>
+      <div className="content">
+        <Button style={{ width: "370px" }} onClick={ checkInfoHandler }>
+          Check info
+        </Button>
+      </div>
       <div className="content">
         <Form style={{ marginLeft: 35 }} onSubmit={ handleBuySubmit }>
           <div className="ui input">
@@ -162,33 +188,33 @@ const Index = (props) => {
   )
 }
 
-export async function getServerSideProps() {
-
-  let rate;
-  let minContrib;
-  let maxContrib;
-  let targetAmount;
-  let raisedBNB;
-  let raisedTokens;
-
-  try {
-    const tokenName = await tokenContract.name();
-    await saleContract.targetAmount().then((data) => targetAmount = parseInt(ethers.utils.formatEther(data)))
-    await saleContract.rate().then((data) => rate = parseInt(ethers.utils.formatUnits(data, 0)))
-    await saleContract.minContribution().then((data) => minContrib = parseInt(ethers.utils.formatEther(data))+1)
-    await saleContract.maxContribution().then((data) => maxContrib = parseInt(ethers.utils.formatEther(data)))
-    await saleContract.raisedBNB().then((data) => raisedBNB = ethers.utils.formatEther(data))
-    await saleContract.raisedTokens().then((data) => raisedTokens = parseInt(ethers.utils.formatEther(data)))
-    return {
-      props: { tokenName, targetAmount, rate, minContrib, maxContrib, raisedTokens, raisedBNB }
-    };
-  } catch (error) {
-    console.error(error);
-  }
-
-  return {
-    props: {}
-  };
-}
+// export async function getServerSideProps() {
+//
+//   let rate;
+//   let minContrib;
+//   let maxContrib;
+//   let targetAmount;
+//   let raisedBNB;
+//   let raisedTokens;
+//
+//   try {
+//     const tokenName = await tokenContract.name();
+//     await saleContract.targetAmount().then((data) => targetAmount = parseInt(ethers.utils.formatEther(data)))
+//     await saleContract.rate().then((data) => rate = parseInt(ethers.utils.formatUnits(data, 0)))
+//     await saleContract.minContribution().then((data) => minContrib = parseInt(ethers.utils.formatEther(data))+1)
+//     await saleContract.maxContribution().then((data) => maxContrib = parseInt(ethers.utils.formatEther(data)))
+//     await saleContract.raisedBNB().then((data) => raisedBNB = ethers.utils.formatEther(data))
+//     await saleContract.raisedTokens().then((data) => raisedTokens = parseInt(ethers.utils.formatEther(data)))
+//     return {
+//       props: { tokenName, targetAmount, rate, minContrib, maxContrib, raisedTokens, raisedBNB }
+//     };
+//   } catch (error) {
+//     console.error(error);
+//   }
+//
+//   return {
+//     props: {}
+//   };
+// }
 
 export default Index
