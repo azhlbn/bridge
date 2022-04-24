@@ -27,7 +27,7 @@ const Index = (props) => {
 
   const amountRef = useRef();
 
-  const [open, setOpen] = React.useState(false)
+  const bnbChainId = "0x38";
 
   const handleConnectWalletClick = async () => {
     try {
@@ -38,8 +38,6 @@ const Index = (props) => {
         return;
       }
       let chainId = await ethereum.request({ method: "eth_chainId" });
-
-      const bnbChainId = "0x38";
 
       if (chainId !== bnbChainId) {
         alert("You are not connected to BNB Smart Chain!");
@@ -60,6 +58,11 @@ const Index = (props) => {
 
   useEffect(() => {
     if (provider.connection.url === 'metamask') {
+
+      if (props.chainId !== bnbChainId) {
+        alert("You are not connected to BNB Smart Chain!");
+        return;
+      }
 
       provider.send("eth_requestAccounts", []) // задаем текущий адрес
       .then((accounts) => {
@@ -93,7 +96,6 @@ const Index = (props) => {
 
     const signer = await provider.getSigner()
     const contractWithSigner = saleContract.connect(signer)
-    console.log(">>>", _val)
     const response = await contractWithSigner.buyTokens(address, { value: _val })
     setPayLoader(true)
     await response.wait()
@@ -110,23 +112,16 @@ const Index = (props) => {
   const checkInfoHandler = async () => {
 
     await tokenContract.name().then((data) => setTokenName(data));
-
     await saleContract.targetAmount().then((data) => setTargetAmount(parseInt(ethers.utils.formatEther(data))))
-
     await saleContract.rate().then((data) => setRate(parseInt(ethers.utils.formatUnits(data, 0))))
-
     await saleContract.minContribution().then((data) => setMinContrib(parseInt(ethers.utils.formatEther(data))+1))
-
     await saleContract.maxContribution().then((data) =>  setMaxContrib(parseInt(ethers.utils.formatEther(data))))
-
     await saleContract.raisedBNB().then((data) => setRaisedBNB(ethers.utils.formatEther(data)))
-
     await saleContract.raisedTokens().then((data) => setRaisedTokens(parseInt(ethers.utils.formatEther(data))))
 
   }
 
   return (
-
   <div style={{ marginTop: 15 }} className="ui centered cards">
     <div className="ui card" style={{ width: "400px" }}>
     <div className="content" ><strong>Sales info</strong></div>
@@ -183,9 +178,24 @@ const Index = (props) => {
       </Button>
       </div>
     </div>
-
   </div>
   )
+}
+
+export async function getServerSideProps() {
+
+  try {
+    let chainId = await ethereum.request({ method: "eth_chainId" });
+    return {
+      props: { chainId }
+    };
+  } catch (error) {
+    console.error(error);
+  }
+
+  return {
+    props: {}
+  };
 }
 
 export default Index
