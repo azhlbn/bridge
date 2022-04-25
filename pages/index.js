@@ -59,24 +59,16 @@ const Index = (props) => {
   useEffect(() => {
     if (provider.connection.url === 'metamask') {
 
-      if (props.chainId !== bnbChainId) {
-        alert("You are not connected to BNB Smart Chain!");
-        return;
-      }
-
-      provider.send("eth_requestAccounts", []) // задаем текущий адрес
-      .then((accounts) => {
-        setAddress(accounts[0])
-      })
-      .catch((error) => console.log(error))
-
       const { provider: ethereum } = provider;
       ethereum.on('accountsChanged', (accounts) => {
         setAddress(accounts[0])
         setUserBalance(0)
         setIsChecked(false)
       })
+
     }
+
+    console.log(">>>", props.chainId)
   }, [])
 
   const checkHandler = async () => {
@@ -180,22 +172,6 @@ const Index = (props) => {
     </div>
   </div>
   )
-}
-
-export async function getServerSideProps() {
-
-  try {
-    let chainId = await ethereum.request({ method: "eth_chainId" });
-    return {
-      props: { chainId }
-    };
-  } catch (error) {
-    console.error(error);
-  }
-
-  return {
-    props: {}
-  };
 }
 
 export default Index
