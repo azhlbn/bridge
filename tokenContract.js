@@ -1,7 +1,7 @@
 import provider from './provider'
 import { ethers } from 'ethers'
 
-const contract_address = "0x1B897dd0c9c2723995E1E3A2f46a46BF5e2a7647"
+const contract_address = "0xe57706DB8f03d16Ae6DA1FDc7030B38f1a30178F"
 const contract_abi = [
   {
     "inputs": [],
