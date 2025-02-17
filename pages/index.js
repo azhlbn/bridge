@@ -25,18 +25,50 @@ const Index = () => {
         feeToken: "0xAeaaf0e2c81Af264101B9129C00F4440cCF0F720",
         loading: false,
         approved: false,
-        txHash: ''
+        txHash: '',
+        allowance: 0, // Добавлено для хранения текущего allowance
     });
+
+    // Проверка текущего allowance
+    const checkAllowance = async () => {
+        if (!state.address || !state.amount) return;
+
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const tokenContract = new ethers.Contract(
+                state.tokenAddress,
+                ['function allowance(address owner, address spender) view returns (uint256)'],
+                provider
+            );
+
+            const allowance = await tokenContract.allowance(
+                state.address,
+                routerConfig[state.sourceChain].address
+            );
+
+            setState(prev => ({
+                ...prev,
+                allowance: parseFloat(ethers.utils.formatEther(allowance)),
+                approved: parseFloat(prev.amount) <= parseFloat(ethers.utils.formatEther(allowance)),
+            }));
+        } catch (error) {
+            console.error("Allowance check failed:", error);
+        }
+    };
+
+    useEffect(() => {
+        checkAllowance();
+    }, [state.address, state.amount, state.sourceChain, state.tokenAddress]);
 
     const connectWallet = async () => {
         try {
             const { ethereum } = window;
             if (!ethereum) throw new Error("MetaMask not installed");
-            
+
             const accounts = await ethereum.request({ 
                 method: 'eth_requestAccounts' 
             });
-            
+
             setState(prev => ({
                 ...prev,
                 address: accounts[0]
@@ -49,7 +81,7 @@ const Index = () => {
     const handleApprove = async () => {
         try {
             setState(prev => ({ ...prev, loading: true }));
-            
+
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
             const tokenContract = new ethers.Contract(
@@ -62,9 +94,10 @@ const Index = () => {
                 routerConfig[state.sourceChain].address,
                 ethers.utils.parseEther(state.amount)
             );
-            
+
             await tx.wait();
             setState(prev => ({ ...prev, approved: true, loading: false }));
+            checkAllowance(); // Обновляем allowance после успешного аппрува
         } catch (error) {
             console.error("Approval failed:", error);
             setState(prev => ({ ...prev, loading: false }));
@@ -74,31 +107,30 @@ const Index = () => {
     const sendCrossChain = async () => {
         try {
             setState(prev => ({ ...prev, loading: true }));
-    
+
             const provider = new ethers.providers.Web3Provider(window.ethereum);
             const signer = provider.getSigner();
-    
+
             const router = new ethers.Contract(
                 routerConfig[state.sourceChain].address,
                 routerABI,
                 signer
             );
-    
-            // Формируем EVM2AnyMessage
+
             const message = {
                 receiver: ethers.utils.defaultAbiCoder.encode(
                     ['address'],
                     [state.address]
                 ),
-                data: "0x", // Пустой payload
+                data: "0x",
                 tokenAmounts: [{
                     token: state.tokenAddress,
                     amount: ethers.utils.parseEther(state.amount)
                 }],
-                feeToken: ethers.constants.AddressZero, // Оплата комиссии через msg.value
+                feeToken: ethers.constants.AddressZero,
                 extraArgs: ethers.utils.defaultAbiCoder.encode(
                     ['bytes4', 'uint256'],
-                    [0x97a657c9, 2_000_000] // EVM_EXTRA_ARGS_V1_TAG + gasLimit
+                    [0x97a657c9, 2_000_000]
                 )
             };
 
@@ -106,14 +138,13 @@ const Index = () => {
                 routerConfig[state.destChain].chainSelector,
                 message
             );
-    
-            // Отправка транзакции
+
             const tx = await router.ccipSend(
                 routerConfig[state.destChain].chainSelector,
                 message,
                 { value: fee }
             );
-    
+
             setState(prev => ({
                 ...prev,
                 txHash: tx.hash,
@@ -207,7 +238,7 @@ const Index = () => {
                         <Button 
                             color="teal" 
                             onClick={handleApprove}
-                            disabled={!state.amount || state.approved || state.loading}
+                            disabled={!state.amount || state.loading || state.allowance >= parseFloat(state.amount)}
                             loading={state.loading && !state.approved}
                         >
                             {state.approved ? 
@@ -218,7 +249,7 @@ const Index = () => {
                         <Button 
                             color="blue" 
                             onClick={sendCrossChain}
-                            disabled={!state.approved || state.loading}
+                            disabled={!state.approved || state.loading || state.allowance < parseFloat(state.amount)}
                             loading={state.loading && state.approved}
                         >
                             <Icon name="random" /> Bridge Now
