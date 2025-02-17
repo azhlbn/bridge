@@ -722,3 +722,9 @@ export const routerConfig = {
 export const getRouterConfig = (chainName) => {
     return routerConfig[chainName] || null;
 };
+
+const ccipConfig = () => {
+    return <div>CCIP Config Page</div>;
+};
+
+export default ccipConfig;
