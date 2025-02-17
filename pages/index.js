@@ -1,177 +1,253 @@
-import 'semantic-ui-css/semantic.min.css'
-import React, { useState, useEffect, useRef } from "react";
-import { Card, Button, Divider, Form, Input, Loader, Icon, Header, Modal } from 'semantic-ui-react'
-import provider from "../provider"
-import tokenContract from "../tokenContract"
-import saleContract from "../saleContract"
-import { useRouter } from "next/router";
-import { ethers } from "ethers"
+import "semantic-ui-css/semantic.min.css";
+import React, { useState, useEffect } from "react";
+import { Button, Form, Loader, Icon, Modal, Dropdown } from "semantic-ui-react";
+import { ethers } from "ethers";
+import { CCIP_BnM_Address, CCIP_LnM_Address, routerConfig, routerABI } from "./ccipConfig";
 
-const Index = (props) => {
+const backgroundStyle = {
+    background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)",
+    minHeight: "100vh",
+    padding: "20px",
+};
 
-  const [isMetamask, setIsMetamask] = useState()
-  const [amount, setAmount] = useState()
-  const [userBalance, setUserBalance] = useState(0)
-  const [address, setAddress] = useState("");
-  const [raisedTokens, setRaisedTokens] = useState()
-  const [raisedBNB, setRaisedBNB] = useState()
-  const [tokenName, setTokenName] = useState()
-  const [isLoader, setIsLoader] = useState(false)
-  const [isChecked, setIsChecked] = useState(false)
-  const [isPaid, setIsPaid] = useState(false)
-  const [payLoader, setPayLoader] = useState(false)
-  const [rate, setRate] = useState()
-  const [minContrib, setMinContrib] = useState()
-  const [maxContrib, setMaxContrib] = useState()
-  const [targetAmount, setTargetAmount] = useState()
+const NETWORK_OPTIONS = [
+    { key: 'astar', value: 'astar', text: 'Astar', icon: 'ethereum' },
+    { key: 'soneium', value: 'soneium', text: 'Soneium', icon: 'snowflake outline' },
+];
 
-  const amountRef = useRef();
+const Index = () => {
+    const [state, setState] = useState({
+        address: '',
+        amount: '',
+        sourceChain: 'astar',
+        destChain: 'soneium',
+        tokenAddress: CCIP_BnM_Address,
+        feeToken: "0xAeaaf0e2c81Af264101B9129C00F4440cCF0F720",
+        loading: false,
+        approved: false,
+        txHash: ''
+    });
 
-  const bnbChainId = "0x38";
+    const connectWallet = async () => {
+        try {
+            const { ethereum } = window;
+            if (!ethereum) throw new Error("MetaMask not installed");
+            
+            const accounts = await ethereum.request({ 
+                method: 'eth_requestAccounts' 
+            });
+            
+            setState(prev => ({
+                ...prev,
+                address: accounts[0]
+            }));
+        } catch (error) {
+            console.error("Wallet connection failed:", error);
+        }
+    };
 
-  const handleConnectWalletClick = async () => {
-    try {
-      const { ethereum } = window;
+    const handleApprove = async () => {
+        try {
+            setState(prev => ({ ...prev, loading: true }));
+            
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const tokenContract = new ethers.Contract(
+                state.tokenAddress,
+                ['function approve(address spender, uint256 amount)'],
+                signer
+            );
 
-      if (!ethereum) {
-        console.log("Metamask not detected");
-        return;
-      }
-      let chainId = await ethereum.request({ method: "eth_chainId" });
+            const tx = await tokenContract.approve(
+                routerConfig[state.sourceChain].address,
+                ethers.utils.parseEther(state.amount)
+            );
+            
+            await tx.wait();
+            setState(prev => ({ ...prev, approved: true, loading: false }));
+        } catch (error) {
+            console.error("Approval failed:", error);
+            setState(prev => ({ ...prev, loading: false }));
+        }
+    };
 
-      if (chainId !== bnbChainId) {
-        alert("You are not connected to BNB Smart Chain!");
-        return;
-      }
+    const sendCrossChain = async () => {
+        try {
+            setState(prev => ({ ...prev, loading: true }));
+    
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+    
+            const router = new ethers.Contract(
+                routerConfig[state.sourceChain].address,
+                routerABI,
+                signer
+            );
+    
+            // Формируем EVM2AnyMessage
+            const message = {
+                receiver: ethers.utils.defaultAbiCoder.encode(
+                    ['address'],
+                    [state.address]
+                ),
+                data: "0x", // Пустой payload
+                tokenAmounts: [{
+                    token: state.tokenAddress,
+                    amount: ethers.utils.parseEther(state.amount)
+                }],
+                feeToken: ethers.constants.AddressZero, // Оплата комиссии через msg.value
+                extraArgs: ethers.utils.defaultAbiCoder.encode(
+                    ['bytes4', 'uint256'],
+                    [0x97a657c9, 2_000_000] // EVM_EXTRA_ARGS_V1_TAG + gasLimit
+                )
+            };
 
-      const accounts = await ethereum.request({
-        method: "eth_requestAccounts",
-      });
-      setAddress(accounts[0]);
+            const fee = await router.getFee(
+                routerConfig[state.destChain].chainSelector,
+                message
+            );
+    
+            // Отправка транзакции
+            const tx = await router.ccipSend(
+                routerConfig[state.destChain].chainSelector,
+                message,
+                { value: fee }
+            );
+    
+            setState(prev => ({
+                ...prev,
+                txHash: tx.hash,
+                loading: false,
+                amount: ''
+            }));
+        } catch (error) {
+            console.error("CCIP transfer failed:", error);
+            setState(prev => ({ ...prev, loading: false }));
+        }
+    };
 
-      } catch (error) {
-      console.log("Error connecting to metamask", error);
-    }
+    return (
+        <div style={backgroundStyle}>
+            <div className="ui centered cards" style={{ maxWidth: '600px', margin: '0 auto' }}>
+                <div className="ui card" style={{
+                    background: 'rgba(32, 32, 48, 0.95)',
+                    color: 'white',
+                    width: '100%',
+                    padding: '20px',
+                    borderRadius: '15px'
+                }}>
+                    <h2 style={{ textAlign: 'center', color: '#3BB1E6' }}>
+                        <Icon name="exchange" /> Cross-Chain Bridge
+                    </h2>
 
+                    {/* Wallet Connection */}
+                    <div style={{ marginBottom: '20px' }}>
+                        <Button 
+                            fluid 
+                            color={state.address ? 'green' : 'blue'} 
+                            onClick={connectWallet}
+                            style={{ borderRadius: '12px' }}
+                        >
+                            {state.address ? 
+                                `Connected: ${state.address.slice(0, 6)}...${state.address.slice(-4)}` : 
+                                'Connect Wallet'}
+                        </Button>
+                    </div>
 
-  };
+                    {/* Network Selection */}
+                    <div className="ui two column grid">
+                        <div className="column">
+                            <Dropdown
+                                fluid
+                                selection
+                                options={NETWORK_OPTIONS}
+                                value={state.sourceChain}
+                                onChange={(e, { value }) => 
+                                    setState(prev => ({ ...prev, sourceChain: value }))
+                                }
+                                labeled
+                                placeholder="From Chain"
+                            />
+                        </div>
+                        <div className="column">
+                            <Dropdown
+                                fluid
+                                selection
+                                options={NETWORK_OPTIONS}
+                                value={state.destChain}
+                                onChange={(e, { value }) => 
+                                    setState(prev => ({ ...prev, destChain: value }))
+                                }
+                                labeled
+                                placeholder="To Chain"
+                            />
+                        </div>
+                    </div>
 
-  useEffect(() => {
-    if (provider.connection.url === 'metamask') {
+                    {/* Amount Input */}
+                    <Form style={{ marginTop: '20px' }}>
+                        <Form.Input
+                            type="number"
+                            placeholder="Amount to transfer"
+                            value={state.amount}
+                            onChange={(e) => 
+                                setState(prev => ({ ...prev, amount: e.target.value }))
+                            }
+                            style={{
+                                background: '#2a2a3c',
+                                color: 'white',
+                                border: '1px solid #3BB1E6',
+                                borderRadius: '12px'
+                            }}
+                        />
+                    </Form>
 
-      const { provider: ethereum } = provider;
-      ethereum.on('accountsChanged', (accounts) => {
-        setAddress(accounts[0])
-        setUserBalance(0)
-        setIsChecked(false)
-      })
+                    {/* Actions */}
+                    <div className="ui two buttons" style={{ marginTop: '20px' }}>
+                        <Button 
+                            color="teal" 
+                            onClick={handleApprove}
+                            disabled={!state.amount || state.approved || state.loading}
+                            loading={state.loading && !state.approved}
+                        >
+                            {state.approved ? 
+                                <><Icon name="check" /> Approved</> : 
+                                'Approve Tokens'}
+                        </Button>
+                        
+                        <Button 
+                            color="blue" 
+                            onClick={sendCrossChain}
+                            disabled={!state.approved || state.loading}
+                            loading={state.loading && state.approved}
+                        >
+                            <Icon name="random" /> Bridge Now
+                        </Button>
+                    </div>
 
-    }
+                    {/* Transaction Status */}
+                    {state.txHash && (
+                        <div style={{ 
+                            marginTop: '20px', 
+                            padding: '10px',
+                            background: 'rgba(59, 177, 230, 0.1)',
+                            borderRadius: '8px',
+                            textAlign: 'center'
+                        }}>
+                            <a 
+                                href={`${routerConfig[state.sourceChain].explorer}/tx/${state.txHash}`} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                style={{ color: '#3BB1E6' }}
+                            >
+                                View Transaction
+                            </a>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
 
-    console.log(">>>", props.chainId)
-  }, [])
-
-  const checkHandler = async () => {
-    setIsLoader(true)
-    await tokenContract.balanceOf(address)
-    .then((bal) => {
-      setIsLoader(false)
-      bal > 0 ? setUserBalance(bal) : setUserBalance(0)
-      setIsChecked(true)
-    })
-  }
-
-  const handleBuySubmit = async (event) => {
-    event.preventDefault()
-
-    let _val = (10**18*amount/rate).toString()
-
-    const signer = await provider.getSigner()
-    const contractWithSigner = saleContract.connect(signer)
-    const response = await contractWithSigner.buyTokens(address, { value: _val })
-    setPayLoader(true)
-    await response.wait()
-    .then(async ()=> {
-      setPayLoader(false)
-      setIsPaid(true)
-      setRaisedTokens(parseInt(raisedTokens)+parseInt(amount))
-      setRaisedBNB(parseFloat(raisedBNB)+amount/rate)
-      setIsChecked(false)
-    })
-
-  }
-
-  const checkInfoHandler = async () => {
-
-    await tokenContract.name().then((data) => setTokenName(data));
-    await saleContract.targetAmount().then((data) => setTargetAmount(parseInt(ethers.utils.formatEther(data))))
-    await saleContract.rate().then((data) => setRate(parseInt(ethers.utils.formatUnits(data, 0))))
-    await saleContract.minContribution().then((data) => setMinContrib(parseInt(ethers.utils.formatEther(data))+1))
-    await saleContract.maxContribution().then((data) =>  setMaxContrib(parseInt(ethers.utils.formatEther(data))))
-    await saleContract.raisedBNB().then((data) => setRaisedBNB(ethers.utils.formatEther(data)))
-    await saleContract.raisedTokens().then((data) => setRaisedTokens(parseInt(ethers.utils.formatEther(data))))
-
-  }
-
-  return (
-  <div style={{ marginTop: 15 }} className="ui centered cards">
-    <div className="ui card" style={{ width: "400px" }}>
-    <div className="content" ><strong>Sales info</strong></div>
-      <div className="content">Target amount: { targetAmount }</div>
-      <div className="content">Raised tokens: { raisedTokens } / Raised BNB: { parseFloat(raisedBNB).toFixed(2) }</div>
-      <div className="content">Current price: vPSH = { (1/rate).toFixed(6) } BNB</div>
-      <div className="content">
-        <p>Min amount: { minContrib }</p>
-        <p>Max amount: { maxContrib }</p>
-      </div>
-      <div className="content">Token name: { tokenName }</div>
-      <div className="content">
-        <Button style={{ width: "370px" }} onClick={ checkInfoHandler }>
-          Check info
-        </Button>
-      </div>
-      <div className="content">
-        <Form style={{ marginLeft: 35 }} onSubmit={ handleBuySubmit }>
-          <div className="ui input">
-            <input
-              placeholder="Enter amount"
-              type="number"
-              value={ amount }
-              onChange={ (e) => setAmount(e.target.value) }
-            />
-          </div>
-          <Button primary style={{ marginLeft: 15 }} type="submit">
-            Buy vPSH
-          </Button>
-          { payLoader && <Loader style={{ marginLeft: 15 }} size="tiny" active inline /> }
-          { !payLoader && isPaid && <Icon style={{ marginLeft: 15 }} color='green' name='check' /> }
-        </Form>
-      </div>
-      <div className="content" style={{ height: "65px" }}>
-      { isChecked && !isLoader && <div style={{ textAlign: "center", marginTop: "8px" , fontSize: "16px"}}>{parseInt(ethers.utils.formatEther(userBalance))}</div> }
-      { isLoader &&
-        <Button style={{ width: "370px" }} loading>
-          Loading
-        </Button>}
-      { !isChecked && !isLoader &&
-        <Button
-          style={{ width: "370px" }}
-          onClick={ checkHandler }>
-          Check your balance
-        </Button> }
-      </div>
-      <div className="content">
-      <Button
-        positive={ !!address }
-        primary
-        onClick={ handleConnectWalletClick }
-        style={{ width: "370px" }}>
-        {!address ? "Connect to Wallet" : address}
-      </Button>
-      </div>
-    </div>
-  </div>
-  )
-}
-
-export default Index
+export default Index;
