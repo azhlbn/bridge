@@ -168,7 +168,7 @@ const Index = () => {
                     borderRadius: '15px'
                 }}>
                     <h2 style={{ textAlign: 'center', color: '#3BB1E6' }}>
-                        <Icon name="exchange" /> Cross-Chain Bridge
+                        <Icon name="exchange" /> xnASTR bridge
                     </h2>
 
                     {/* Wallet Connection */}
