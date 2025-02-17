@@ -266,7 +266,7 @@ const Index = () => {
                             textAlign: 'center'
                         }}>
                             <a 
-                                href={`${routerConfig[state.sourceChain].explorer}/tx/${state.txHash}`} 
+                                href={`https://ccip.chain.link/address/${state.address}`} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
                                 style={{ color: '#3BB1E6' }}
