@@ -32,6 +32,7 @@ const Index = () => {
         fee: 0,
         networkError: null,
         showExternalLink: false,
+        transactionConfirmed: false,
     });
 
     // Memoize functions to prevent unnecessary re-renders
@@ -293,9 +294,20 @@ const Index = () => {
                 loading: false,
                 amount: "",
             }));
+
+            // Wait for the transaction to be mined
+            await tx.wait();
+            setState((prev) => ({
+                ...prev,
+                transactionConfirmed: true, // Set confirmed when transaction is mined
+            }));
         } catch (error) {
             console.error("CCIP transfer failed:", error);
-            setState((prev) => ({ ...prev, loading: false }));
+            setState((prev) => ({
+                ...prev,
+                loading: false,
+                transactionConfirmed: false, // Reset if there's an error
+            }));
         }
     };
 
@@ -612,6 +624,7 @@ const Index = () => {
                                         fontWeight: "500",
                                         transition: "all 0.2s ease",
                                         opacity: state.loading ? 0.7 : 1,
+                                        width: "100%",
                                     }}
                                     onClick={
                                         state.approved
@@ -635,14 +648,9 @@ const Index = () => {
                             </div>
 
                             {/* Transaction Link */}
-                            {state.txHash && (
-                                <div
-                                    style={{
-                                        marginTop: "1.5rem",
-                                        textAlign: "center",
-                                    }}
-                                >
-                                    <button
+                            <div style={{ display: "grid", gap: "1rem", marginTop: "1rem" }}>
+                                {state.txHash && (
+                                    <Button
                                         onClick={() => {
                                             window.open(
                                                 `https://ccip.chain.link/address/${state.address}`,
@@ -651,19 +659,27 @@ const Index = () => {
                                             );
                                         }}
                                         style={{
+                                            background: "transparent",
                                             color: "#7cf8cb",
-                                            background: "none",
-                                            border: "none",
-                                            padding: 0,
-                                            fontSize: "0.875rem",
-                                            cursor: "pointer",
-                                            textDecoration: "none",
+                                            border: "1px solid #29ffb2",
+                                            borderRadius: "12px",
+                                            padding: "16px",
+                                            fontWeight: "500",
+                                            transition: "all 0.2s ease",
+                                            opacity: state.transactionConfirmed
+                                                ? 1
+                                                : 0.5,
+                                            cursor: state.transactionConfirmed
+                                                ? "pointer"
+                                                : "not-allowed",
+                                            width: "100%", // Match width with Bridge Now button
                                         }}
+                                        disabled={!state.transactionConfirmed}
                                     >
                                         View on Explorer ↗
-                                    </button>
-                                </div>
-                            )}
+                                    </Button>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
