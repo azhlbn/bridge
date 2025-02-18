@@ -190,7 +190,14 @@ const Index = () => {
                 window.ethereum.removeListener("chainChanged", async () => {});
             }
         };
-    }, [state.amount, state.address, calculateFee, checkAllowance, getBalance, checkNetwork]);
+    }, [
+        state.amount,
+        state.address,
+        calculateFee,
+        checkAllowance,
+        getBalance,
+        checkNetwork,
+    ]);
 
     const connectWallet = async () => {
         try {
@@ -303,7 +310,7 @@ const Index = () => {
                 <div
                     style={{
                         position: "absolute",
-                        top: "-20px", // Adjust this value to position the logo above the block
+                        top: "-60px", // Adjust this value to position the logo above the block
                         left: "15px", // Aligned with the left edge of the inner block
                         zIndex: 1001, // Higher than error message
                     }}
@@ -354,12 +361,9 @@ const Index = () => {
                                         color: "white",
                                         padding: "1rem",
                                         borderRadius: "12px",
-                                        marginTop: "1rem", // Space below logo
                                         textAlign: "center",
                                         fontWeight: "bold",
                                         maxWidth: "480px",
-                                        margin: "0 auto", // Center the error message
-                                        position: "relative",
                                         zIndex: 1000, // Below logo
                                     }}
                                 >
@@ -376,7 +380,8 @@ const Index = () => {
                                     WebkitBackgroundClip: "text",
                                 }}
                             >
-                                <Icon name="exchange" /> Bridge xnASTR to Soneium
+                                <Icon name="exchange" /> Bridge xnASTR to
+                                Soneium
                             </h1>
 
                             {/* Wallet Connection */}
@@ -443,7 +448,9 @@ const Index = () => {
                                     >
                                         From
                                     </div>
-                                    <div style={{ fontWeight: "600" }}>Astar</div>
+                                    <div style={{ fontWeight: "600" }}>
+                                        Astar
+                                    </div>
                                 </div>
 
                                 <Icon
@@ -487,7 +494,9 @@ const Index = () => {
                                     >
                                         To
                                     </div>
-                                    <div style={{ fontWeight: "600" }}>Soneium</div>
+                                    <div style={{ fontWeight: "600" }}>
+                                        Soneium
+                                    </div>
                                 </div>
                             </div>
 
@@ -500,7 +509,9 @@ const Index = () => {
                                     fontSize: "0.875rem",
                                 }}
                             >
-                                <span style={{ color: "#94A3B8" }}>Available:</span>
+                                <span style={{ color: "#94A3B8" }}>
+                                    Available:
+                                </span>
                                 <span style={{ fontWeight: "500" }}>
                                     {state.balance.toFixed(4)} xASTR
                                 </span>
@@ -537,7 +548,8 @@ const Index = () => {
                                             right: "8px",
                                             top: "50%",
                                             transform: "translateY(-50%)",
-                                            background: "rgba(59, 130, 246, 0.1)",
+                                            background:
+                                                "rgba(59, 130, 246, 0.1)",
                                             color: "#939598",
                                             border: "none",
                                             borderRadius: "8px",
@@ -627,18 +639,22 @@ const Index = () => {
                                         textAlign: "center",
                                     }}
                                 >
-                                    <a
+                                    <Link
                                         href={`https://ccip.chain.link/address/${state.address}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style={{
-                                            color: "#7cf8cb",
-                                            textDecoration: "none",
-                                            fontSize: "0.875rem",
-                                        }}
+                                        passHref
                                     >
-                                        View on Explorer ↗
-                                    </a>
+                                        <a
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            style={{
+                                                color: "#7cf8cb",
+                                                textDecoration: "none",
+                                                fontSize: "0.875rem",
+                                            }}
+                                        >
+                                            View on Explorer ↗
+                                        </a>
+                                    </Link>
                                 </div>
                             )}
                         </div>
