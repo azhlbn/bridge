@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { Button, Form, Icon, Label } from "semantic-ui-react";
 import { ethers } from "ethers";
 import { CCIP_BnM_Address, routerConfig, routerABI } from "./ccipConfig";
+import Link from 'next/link'; // Import Link for navigation
 
 const backgroundStyle = {
     background:
@@ -35,9 +36,9 @@ const Index = () => {
         const checkAndUpdate = async () => {
             const networkError = await checkNetwork();
             if (networkError) {
-                setState((prev) => ({ ...prev, networkError }));
+                setState(prev => ({ ...prev, networkError }));
             } else {
-                setState((prev) => ({ ...prev, networkError: null }));
+                setState(prev => ({ ...prev, networkError: null }));
                 checkAllowance();
                 calculateFee();
                 if (state.address) getBalance();
@@ -47,7 +48,7 @@ const Index = () => {
 
         // Listen for network changes in MetaMask
         if (window.ethereum) {
-            window.ethereum.on("chainChanged", async () => {
+            window.ethereum.on('chainChanged', async () => {
                 await checkAndUpdate();
                 window.location.reload(); // Reload the page to reflect network changes
             });
@@ -55,7 +56,7 @@ const Index = () => {
 
         return () => {
             if (window.ethereum) {
-                window.ethereum.removeListener("chainChanged", async () => {});
+                window.ethereum.removeListener('chainChanged', async () => {});
             }
         };
     }, [state.amount, state.address]);
@@ -267,10 +268,8 @@ const Index = () => {
     const checkNetwork = async () => {
         if (window.ethereum) {
             try {
-                const chainId = await window.ethereum.request({
-                    method: "eth_chainId",
-                });
-                const astarChainId = "0x250"; // Astar's chain ID in hexadecimal
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const astarChainId = '0x250'; // Astar's chain ID in hexadecimal
 
                 if (chainId !== astarChainId) {
                     return "Please switch to the Astar network.";
@@ -302,34 +301,52 @@ const Index = () => {
                         zIndex: 1001, // Higher than error message
                     }}
                 >
-                    <a
-                        href="/"
-                        style={{
-                            display: "flex",
-                            alignItems: "center",
-                            textDecoration: "none",
-                        }}
-                    >
-                        <img
-                            src="/images/logo.png"
-                            alt="Algem Logo"
+                    <Link href="/" passHref>
+                        <a
                             style={{
-                                height: "30px", // Adjust based on your logo's actual height
-                                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
-                            }}
-                        />
-                        <span
-                            style={{
-                                color: "#E2E8F0",
-                                fontSize: "1.5rem",
-                                fontWeight: "600",
-                                letterSpacing: "-0.5px",
+                                display: "flex",
+                                alignItems: "center",
+                                textDecoration: "none",
                             }}
                         >
-                            {/* No text here currently */}
-                        </span>
-                    </a>
+                            <img
+                                src="/images/logo.png"
+                                alt="Algem Logo"
+                                style={{
+                                    height: "30px", // Adjust based on your logo's actual height
+                                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
+                                }}
+                            />
+                            <span
+                                style={{
+                                    color: "#E2E8F0",
+                                    fontSize: "1.5rem",
+                                    fontWeight: "600",
+                                    letterSpacing: "-0.5px",
+                                }}
+                            >
+                                {/* No text here currently */}
+                            </span>
+                        </a>
+                    </Link>
                 </div>
+                {state.networkError && (
+                    <div style={{
+                        background: "rgba(220, 53, 69, 0.8)", // Red background for error
+                        color: "white",
+                        padding: "1rem",
+                        borderRadius: "12px",
+                        marginTop: "1rem", // Space below logo
+                        textAlign: "center",
+                        fontWeight: "bold",
+                        maxWidth: "480px",
+                        margin: "0 auto", // Center the error message
+                        position: "relative",
+                        zIndex: 1000, // Below logo
+                    }}>
+                        {state.networkError}
+                    </div>
+                )}
             </div>
             <div
                 style={{
@@ -356,25 +373,6 @@ const Index = () => {
                             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                         }}
                     >
-                        {state.networkError && (
-                            <div
-                                style={{
-                                    background: "rgba(220, 53, 69, 0.8)", // Red background for error
-                                    color: "white",
-                                    padding: "1rem",
-                                    borderRadius: "12px",
-                                    marginTop: "1rem", // Space below logo
-                                    textAlign: "center",
-                                    fontWeight: "bold",
-                                    maxWidth: "480px",
-                                    margin: "0 auto", // Center the error message
-                                    position: "relative",
-                                    zIndex: 1000, // Below logo
-                                }}
-                            >
-                                {state.networkError}
-                            </div>
-                        )}
                         <h1
                             style={{
                                 textAlign: "left",
@@ -509,7 +507,7 @@ const Index = () => {
                         >
                             <span style={{ color: "#94A3B8" }}>Available:</span>
                             <span style={{ fontWeight: "500" }}>
-                                {state.balance.toFixed(4)} xnASTR
+                                {state.balance.toFixed(4)} xASTR
                             </span>
                         </div>
 
@@ -544,7 +542,7 @@ const Index = () => {
                                         right: "8px",
                                         top: "50%",
                                         transform: "translateY(-50%)",
-                                        background: "rgba(162, 162, 162, 0.1)",
+                                        background: "rgba(59, 130, 246, 0.1)",
                                         color: "#939598",
                                         border: "none",
                                         borderRadius: "8px",
