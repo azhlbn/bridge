@@ -516,7 +516,7 @@ const Index = () => {
                                     Available:
                                 </span>
                                 <span style={{ fontWeight: "500" }}>
-                                    {state.balance.toFixed(4)} xASTR
+                                    {state.balance.toFixed(4)} xnASTR
                                 </span>
                             </div>
 
@@ -594,7 +594,7 @@ const Index = () => {
                                     <span style={{ color: "#94A3B8" }}>
                                         Estimated Fee:
                                     </span>
-                                    <span>{state.fee.toFixed(4)} ETH</span>
+                                    <span>{state.fee.toFixed(4)} ASTR</span>
                                 </div>
                             </div>
 
