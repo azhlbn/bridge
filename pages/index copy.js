@@ -330,6 +330,25 @@ const Index = () => {
                         </span>
                     </a>
                 </div>
+                {state.networkError && (
+                    <div
+                        style={{
+                            background: "rgba(220, 53, 69, 0.8)", // Red background for error
+                            color: "white",
+                            padding: "1rem",
+                            borderRadius: "12px",
+                            marginTop: "1rem", // Space below logo
+                            textAlign: "center",
+                            fontWeight: "bold",
+                            maxWidth: "480px",
+                            margin: "0 auto", // Center the error message
+                            position: "relative",
+                            zIndex: 1000, // Below logo
+                        }}
+                    >
+                        {state.networkError}
+                    </div>
+                )}
             </div>
             <div
                 style={{
@@ -356,25 +375,6 @@ const Index = () => {
                             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                         }}
                     >
-                        {state.networkError && (
-                            <div
-                                style={{
-                                    background: "rgba(220, 53, 69, 0.8)", // Red background for error
-                                    color: "white",
-                                    padding: "1rem",
-                                    borderRadius: "12px",
-                                    marginTop: "1rem", // Space below logo
-                                    textAlign: "center",
-                                    fontWeight: "bold",
-                                    maxWidth: "480px",
-                                    margin: "0 auto", // Center the error message
-                                    position: "relative",
-                                    zIndex: 1000, // Below logo
-                                }}
-                            >
-                                {state.networkError}
-                            </div>
-                        )}
                         <h1
                             style={{
                                 textAlign: "left",
@@ -388,6 +388,7 @@ const Index = () => {
                             <Icon name="exchange" /> Bridge xnASTR to Soneium
                         </h1>
 
+                        {/* Rest of your component content */}
                         {/* Wallet Connection */}
                         <Button
                             fluid
