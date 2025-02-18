@@ -1,9 +1,10 @@
 import "semantic-ui-css/semantic.min.css";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button, Form, Icon, Label } from "semantic-ui-react";
 import { ethers } from "ethers";
 import { CCIP_BnM_Address, routerConfig, routerABI } from "./ccipConfig";
-import Link from 'next/link'; // Import Link for navigation
+import Link from "next/link";
+import Image from "next/image"; // Import Image for image optimization
 
 const backgroundStyle = {
     background:
@@ -32,37 +33,8 @@ const Index = () => {
         networkError: null,
     });
 
-    useEffect(() => {
-        const checkAndUpdate = async () => {
-            const networkError = await checkNetwork();
-            if (networkError) {
-                setState(prev => ({ ...prev, networkError }));
-            } else {
-                setState(prev => ({ ...prev, networkError: null }));
-                checkAllowance();
-                calculateFee();
-                if (state.address) getBalance();
-            }
-        };
-        checkAndUpdate();
-
-        // Listen for network changes in MetaMask
-        if (window.ethereum) {
-            window.ethereum.on('chainChanged', async () => {
-                await checkAndUpdate();
-                window.location.reload(); // Reload the page to reflect network changes
-            });
-        }
-
-        return () => {
-            if (window.ethereum) {
-                window.ethereum.removeListener('chainChanged', async () => {});
-            }
-        };
-    }, [state.amount, state.address]);
-
-    // Получение баланса пользователя
-    const getBalance = async () => {
+    // Memoize functions to prevent unnecessary re-renders
+    const getBalance = useCallback(async () => {
         if (!state.address) return;
 
         try {
@@ -81,10 +53,9 @@ const Index = () => {
         } catch (error) {
             console.error("Balance check failed:", error);
         }
-    };
+    }, [state.address, state.tokenAddress]);
 
-    // Расчет комиссии
-    const calculateFee = async () => {
+    const calculateFee = useCallback(async () => {
         if (
             !state.amount ||
             isNaN(state.amount) ||
@@ -133,7 +104,72 @@ const Index = () => {
         } catch (error) {
             console.error("Fee calculation failed:", error);
         }
-    };
+    }, [
+        state.amount,
+        state.address,
+        state.sourceChain,
+        state.destChain,
+        state.tokenAddress,
+    ]);
+
+    const checkAllowance = useCallback(async () => {
+        if (!state.address || !state.amount) return;
+
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const tokenContract = new ethers.Contract(
+                state.tokenAddress,
+                [
+                    "function allowance(address owner, address spender) view returns (uint256)",
+                ],
+                provider
+            );
+
+            const allowance = await tokenContract.allowance(
+                state.address,
+                routerConfig[state.sourceChain].address
+            );
+
+            setState((prev) => ({
+                ...prev,
+                allowance: parseFloat(ethers.utils.formatEther(allowance)),
+                approved:
+                    parseFloat(prev.amount) <=
+                    parseFloat(ethers.utils.formatEther(allowance)),
+            }));
+        } catch (error) {
+            console.error("Allowance check failed:", error);
+        }
+    }, [state.address, state.amount, state.sourceChain, state.tokenAddress]);
+
+    useEffect(() => {
+        const checkAndUpdate = async () => {
+            const networkError = await checkNetwork();
+            if (networkError) {
+                setState((prev) => ({ ...prev, networkError }));
+            } else {
+                setState((prev) => ({ ...prev, networkError: null }));
+                checkAllowance();
+                calculateFee();
+                if (state.address) getBalance();
+            }
+        };
+        checkAndUpdate();
+
+        // Listen for network changes in MetaMask
+        if (window.ethereum) {
+            window.ethereum.on("chainChanged", async () => {
+                await checkAndUpdate();
+                window.location.reload(); // Reload the page to reflect network changes
+            });
+        }
+
+        return () => {
+            if (window.ethereum) {
+                window.ethereum.removeListener("chainChanged", async () => {});
+            }
+        };
+    }, [state.amount, state.address, calculateFee, checkAllowance, getBalance]);
 
     const connectWallet = async () => {
         try {
@@ -176,36 +212,6 @@ const Index = () => {
         } catch (error) {
             console.error("Approval failed:", error);
             setState((prev) => ({ ...prev, loading: false }));
-        }
-    };
-
-    const checkAllowance = async () => {
-        if (!state.address || !state.amount) return;
-
-        try {
-            const provider = new ethers.providers.Web3Provider(window.ethereum);
-            const tokenContract = new ethers.Contract(
-                state.tokenAddress,
-                [
-                    "function allowance(address owner, address spender) view returns (uint256)",
-                ],
-                provider
-            );
-
-            const allowance = await tokenContract.allowance(
-                state.address,
-                routerConfig[state.sourceChain].address
-            );
-
-            setState((prev) => ({
-                ...prev,
-                allowance: parseFloat(ethers.utils.formatEther(allowance)),
-                approved:
-                    parseFloat(prev.amount) <=
-                    parseFloat(ethers.utils.formatEther(allowance)),
-            }));
-        } catch (error) {
-            console.error("Allowance check failed:", error);
         }
     };
 
@@ -265,11 +271,13 @@ const Index = () => {
     };
 
     // Check if the current network is Astar
-    const checkNetwork = async () => {
+    const checkNetwork = useCallback(async () => {
         if (window.ethereum) {
             try {
-                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-                const astarChainId = '0x250'; // Astar's chain ID in hexadecimal
+                const chainId = await window.ethereum.request({
+                    method: "eth_chainId",
+                });
+                const astarChainId = "0x250"; // Astar's chain ID in hexadecimal
 
                 if (chainId !== astarChainId) {
                     return "Please switch to the Astar network.";
@@ -282,7 +290,7 @@ const Index = () => {
         } else {
             return "Please install MetaMask to interact with this application.";
         }
-    };
+    }, []);
 
     return (
         <div style={backgroundStyle}>
@@ -309,11 +317,12 @@ const Index = () => {
                                 textDecoration: "none",
                             }}
                         >
-                            <img
+                            <Image
                                 src="/images/logo.png"
                                 alt="Algem Logo"
+                                width={100} // Adjust based on your logo's actual width
+                                height={30} // Adjust based on your logo's actual height
                                 style={{
-                                    height: "30px", // Adjust based on your logo's actual height
                                     filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
                                 }}
                             />
@@ -330,23 +339,6 @@ const Index = () => {
                         </a>
                     </Link>
                 </div>
-                {state.networkError && (
-                    <div style={{
-                        background: "rgba(220, 53, 69, 0.8)", // Red background for error
-                        color: "white",
-                        padding: "1rem",
-                        borderRadius: "12px",
-                        marginTop: "1rem", // Space below logo
-                        textAlign: "center",
-                        fontWeight: "bold",
-                        maxWidth: "480px",
-                        margin: "0 auto", // Center the error message
-                        position: "relative",
-                        zIndex: 1000, // Below logo
-                    }}>
-                        {state.networkError}
-                    </div>
-                )}
             </div>
             <div
                 style={{
@@ -373,6 +365,25 @@ const Index = () => {
                             boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                         }}
                     >
+                        {state.networkError && (
+                            <div
+                                style={{
+                                    background: "rgba(220, 53, 69, 0.8)", // Red background for error
+                                    color: "white",
+                                    padding: "1rem",
+                                    borderRadius: "12px",
+                                    marginTop: "1rem", // Space below logo
+                                    textAlign: "center",
+                                    fontWeight: "bold",
+                                    maxWidth: "480px",
+                                    margin: "0 auto", // Center the error message
+                                    position: "relative",
+                                    zIndex: 1000, // Below logo
+                                }}
+                            >
+                                {state.networkError}
+                            </div>
+                        )}
                         <h1
                             style={{
                                 textAlign: "left",
@@ -432,12 +443,12 @@ const Index = () => {
                                     alignItems: "center",
                                 }}
                             >
-                                <img
+                                <Image
                                     src="/images/astar_logo.png"
                                     alt="Astar Logo"
+                                    width={30}
+                                    height={30}
                                     style={{
-                                        width: "30px",
-                                        height: "30px",
                                         marginBottom: "0.5rem",
                                     }}
                                 />
@@ -445,6 +456,7 @@ const Index = () => {
                                     style={{
                                         color: "#94A3B8",
                                         fontSize: "0.875rem",
+                                        marginTop: "0.5rem",
                                     }}
                                 >
                                     From
@@ -475,12 +487,12 @@ const Index = () => {
                                     alignItems: "center",
                                 }}
                             >
-                                <img
+                                <Image
                                     src="/images/soneium_logo.png"
                                     alt="Soneium Logo"
+                                    width={30}
+                                    height={30}
                                     style={{
-                                        width: "30px",
-                                        height: "30px",
                                         marginBottom: "0.5rem",
                                     }}
                                 />
@@ -488,6 +500,7 @@ const Index = () => {
                                     style={{
                                         color: "#94A3B8",
                                         fontSize: "0.875rem",
+                                        marginTop: "0.5rem",
                                     }}
                                 >
                                     To
