@@ -142,6 +142,27 @@ const Index = () => {
         }
     }, [state.address, state.amount, state.sourceChain, state.tokenAddress]);
 
+    const checkNetwork = useCallback(async () => {
+        if (window.ethereum) {
+            try {
+                const chainId = await window.ethereum.request({
+                    method: "eth_chainId",
+                });
+                const astarChainId = "0x250"; // Astar's chain ID in hexadecimal
+
+                if (chainId !== astarChainId) {
+                    return "Please switch to the Astar network.";
+                }
+                return null; // Network is correct
+            } catch (error) {
+                console.error("Error checking network:", error);
+                return "Error checking network. Please try again.";
+            }
+        } else {
+            return "Please install MetaMask to interact with this application.";
+        }
+    }, []);
+
     useEffect(() => {
         const checkAndUpdate = async () => {
             const networkError = await checkNetwork();
@@ -169,7 +190,7 @@ const Index = () => {
                 window.ethereum.removeListener("chainChanged", async () => {});
             }
         };
-    }, [state.amount, state.address, calculateFee, checkAllowance, getBalance]);
+    }, [state.amount, state.address, calculateFee, checkAllowance, getBalance, checkNetwork]);
 
     const connectWallet = async () => {
         try {
@@ -270,28 +291,6 @@ const Index = () => {
         }
     };
 
-    // Check if the current network is Astar
-    const checkNetwork = useCallback(async () => {
-        if (window.ethereum) {
-            try {
-                const chainId = await window.ethereum.request({
-                    method: "eth_chainId",
-                });
-                const astarChainId = "0x250"; // Astar's chain ID in hexadecimal
-
-                if (chainId !== astarChainId) {
-                    return "Please switch to the Astar network.";
-                }
-                return null; // Network is correct
-            } catch (error) {
-                console.error("Error checking network:", error);
-                return "Error checking network. Please try again.";
-            }
-        } else {
-            return "Please install MetaMask to interact with this application.";
-        }
-    }, []);
-
     return (
         <div style={backgroundStyle}>
             <div
@@ -310,355 +309,339 @@ const Index = () => {
                     }}
                 >
                     <Link href="/" passHref>
-                        <a
+                        {/* Removed <a> tag, using Link to wrap the content */}
+                        <Image
+                            src="/images/logo.png"
+                            alt="Algem Logo"
+                            width={100} // Adjust based on your logo's actual width
+                            height={30} // Adjust based on your logo's actual height
                             style={{
-                                display: "flex",
-                                alignItems: "center",
-                                textDecoration: "none",
+                                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
+                                cursor: "pointer", // To give visual feedback for clickability
                             }}
-                        >
-                            <Image
-                                src="/images/logo.png"
-                                alt="Algem Logo"
-                                width={100} // Adjust based on your logo's actual width
-                                height={30} // Adjust based on your logo's actual height
-                                style={{
-                                    filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.2))",
-                                }}
-                            />
-                            <span
-                                style={{
-                                    color: "#E2E8F0",
-                                    fontSize: "1.5rem",
-                                    fontWeight: "600",
-                                    letterSpacing: "-0.5px",
-                                }}
-                            >
-                                {/* No text here currently */}
-                            </span>
-                        </a>
+                        />
                     </Link>
                 </div>
-            </div>
-            <div
-                style={{
-                    maxWidth: "480px",
-                    margin: "2rem auto",
-                    marginTop: state.networkError ? "7rem" : "5rem", // Adjust margin based on error message visibility
-                    position: "relative",
-                }}
-            >
                 <div
                     style={{
                         maxWidth: "480px",
                         margin: "2rem auto",
+                        marginTop: state.networkError ? "7rem" : "5rem", // Adjust margin based on error message visibility
                         position: "relative",
                     }}
                 >
                     <div
                         style={{
-                            background: "#212223",
-                            borderRadius: "20px",
-                            border: "1px solid #323233",
-                            padding: "2rem",
-                            backdropFilter: "blur(10px)",
-                            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
+                            maxWidth: "480px",
+                            margin: "2rem auto",
+                            position: "relative",
                         }}
                     >
-                        {state.networkError && (
-                            <div
-                                style={{
-                                    background: "rgba(220, 53, 69, 0.8)", // Red background for error
-                                    color: "white",
-                                    padding: "1rem",
-                                    borderRadius: "12px",
-                                    marginTop: "1rem", // Space below logo
-                                    textAlign: "center",
-                                    fontWeight: "bold",
-                                    maxWidth: "480px",
-                                    margin: "0 auto", // Center the error message
-                                    position: "relative",
-                                    zIndex: 1000, // Below logo
-                                }}
-                            >
-                                {state.networkError}
-                            </div>
-                        )}
-                        <h1
-                            style={{
-                                textAlign: "left",
-                                fontSize: "1.2rem",
-                                fontWeight: "300",
-                                marginBottom: "1.5rem",
-                                color: "#939598",
-                                WebkitBackgroundClip: "text",
-                            }}
-                        >
-                            <Icon name="exchange" /> Bridge xnASTR to Soneium
-                        </h1>
-
-                        {/* Wallet Connection */}
-                        <Button
-                            fluid
-                            style={{
-                                background: state.address
-                                    ? "transparent"
-                                    : "#29ffb2",
-                                color: state.address ? "white" : "black",
-                                border: state.address
-                                    ? "1px solid #444444"
-                                    : "1px solid #29ffb2",
-                                borderRadius: "12px",
-                                padding: "14px",
-                                fontWeight: "500",
-                                marginBottom: "1.5rem",
-                                transition: "all 0.2s ease",
-                            }}
-                            onClick={connectWallet}
-                        >
-                            {state.address
-                                ? `0x...${state.address.slice(-4)}`
-                                : "Connect Wallet"}
-                        </Button>
-
-                        {/* Chain Display */}
                         <div
                             style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                marginBottom: "1.5rem",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    flex: 1,
-                                    padding: "1rem",
-                                    background: "#212223",
-                                    border: "1px solid #444444",
-                                    borderRadius: "12px",
-                                    marginRight: "0.5rem",
-                                    textAlign: "center",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <Image
-                                    src="/images/astar_logo.png"
-                                    alt="Astar Logo"
-                                    width={30}
-                                    height={30}
-                                    style={{
-                                        marginBottom: "0.5rem",
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        color: "#94A3B8",
-                                        fontSize: "0.875rem",
-                                        marginTop: "0.5rem",
-                                    }}
-                                >
-                                    From
-                                </div>
-                                <div style={{ fontWeight: "600" }}>Astar</div>
-                            </div>
-
-                            <Icon
-                                name="arrow right"
-                                style={{
-                                    alignSelf: "center",
-                                    color: "#64748B",
-                                    margin: "0 0.5rem",
-                                }}
-                            />
-
-                            <div
-                                style={{
-                                    flex: 1,
-                                    padding: "1rem",
-                                    background: "#212223",
-                                    border: "1px solid #444444",
-                                    borderRadius: "12px",
-                                    marginLeft: "0.5rem",
-                                    textAlign: "center",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "center",
-                                }}
-                            >
-                                <Image
-                                    src="/images/soneium_logo.png"
-                                    alt="Soneium Logo"
-                                    width={30}
-                                    height={30}
-                                    style={{
-                                        marginBottom: "0.5rem",
-                                    }}
-                                />
-                                <div
-                                    style={{
-                                        color: "#94A3B8",
-                                        fontSize: "0.875rem",
-                                        marginTop: "0.5rem",
-                                    }}
-                                >
-                                    To
-                                </div>
-                                <div style={{ fontWeight: "600" }}>Soneium</div>
-                            </div>
-                        </div>
-
-                        {/* Balance Info */}
-                        <div
-                            style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                marginBottom: "1rem",
-                                fontSize: "0.875rem",
-                            }}
-                        >
-                            <span style={{ color: "#94A3B8" }}>Available:</span>
-                            <span style={{ fontWeight: "500" }}>
-                                {state.balance.toFixed(4)} xASTR
-                            </span>
-                        </div>
-
-                        {/* Amount Input */}
-                        <Form>
-                            <div style={{ position: "relative" }}>
-                                <input
-                                    type="number"
-                                    placeholder="0.0"
-                                    value={state.amount}
-                                    onChange={(e) =>
-                                        setState((prev) => ({
-                                            ...prev,
-                                            amount: e.target.value,
-                                        }))
-                                    }
-                                    style={{
-                                        width: "100%",
-                                        background: "#212223",
-                                        border: "1px solid #444444",
-                                        borderRadius: "12px",
-                                        padding: "16px",
-                                        fontSize: "1.125rem",
-                                        color: "#F8FAFC",
-                                        outline: "none",
-                                        transition: "all 0.2s ease",
-                                    }}
-                                />
-                                <button
-                                    style={{
-                                        position: "absolute",
-                                        right: "8px",
-                                        top: "50%",
-                                        transform: "translateY(-50%)",
-                                        background: "rgba(59, 130, 246, 0.1)",
-                                        color: "#939598",
-                                        border: "none",
-                                        borderRadius: "8px",
-                                        padding: "4px 8px",
-                                        fontSize: "0.875rem",
-                                        cursor: "pointer",
-                                    }}
-                                    onClick={async () => {
-                                        setState((prev) => ({
-                                            ...prev,
-                                            amount: prev.balance.toString(),
-                                        }));
-                                        await calculateFee();
-                                    }}
-                                >
-                                    MAX
-                                </button>
-                            </div>
-                        </Form>
-
-                        {/* Fee Info */}
-                        <div
-                            style={{
-                                margin: "1rem 0",
-                                padding: "1rem",
                                 background: "#212223",
-                                border: "1px solid #444444",
-                                borderRadius: "12px",
-                                fontSize: "0.875rem",
+                                borderRadius: "20px",
+                                border: "1px solid #323233",
+                                padding: "2rem",
+                                backdropFilter: "blur(10px)",
+                                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                             }}
                         >
+                            {state.networkError && (
+                                <div
+                                    style={{
+                                        background: "rgba(220, 53, 69, 0.8)", // Red background for error
+                                        color: "white",
+                                        padding: "1rem",
+                                        borderRadius: "12px",
+                                        marginTop: "1rem", // Space below logo
+                                        textAlign: "center",
+                                        fontWeight: "bold",
+                                        maxWidth: "480px",
+                                        margin: "0 auto", // Center the error message
+                                        position: "relative",
+                                        zIndex: 1000, // Below logo
+                                    }}
+                                >
+                                    {state.networkError}
+                                </div>
+                            )}
+                            <h1
+                                style={{
+                                    textAlign: "left",
+                                    fontSize: "1.2rem",
+                                    fontWeight: "300",
+                                    marginBottom: "1.5rem",
+                                    color: "#939598",
+                                    WebkitBackgroundClip: "text",
+                                }}
+                            >
+                                <Icon name="exchange" /> Bridge xnASTR to Soneium
+                            </h1>
+
+                            {/* Wallet Connection */}
+                            <Button
+                                fluid
+                                style={{
+                                    background: state.address
+                                        ? "transparent"
+                                        : "#29ffb2",
+                                    color: state.address ? "white" : "black",
+                                    border: state.address
+                                        ? "1px solid #444444"
+                                        : "1px solid #29ffb2",
+                                    borderRadius: "12px",
+                                    padding: "14px",
+                                    fontWeight: "500",
+                                    marginBottom: "1.5rem",
+                                    transition: "all 0.2s ease",
+                                }}
+                                onClick={connectWallet}
+                            >
+                                {state.address
+                                    ? `0x...${state.address.slice(-4)}`
+                                    : "Connect Wallet"}
+                            </Button>
+
+                            {/* Chain Display */}
                             <div
                                 style={{
                                     display: "flex",
                                     justifyContent: "space-between",
-                                    marginBottom: "0.5rem",
+                                    marginBottom: "1.5rem",
                                 }}
                             >
-                                <span style={{ color: "#94A3B8" }}>
-                                    Estimated Fee:
-                                </span>
-                                <span>{state.fee.toFixed(4)} ETH</span>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div style={{ display: "grid", gap: "1rem" }}>
-                            <Button
-                                loading={state.loading && !state.approved}
-                                style={{
-                                    background: state.approved
-                                        ? "#29ffb2"
-                                        : "#29ffb2",
-                                    color: "black",
-                                    borderRadius: "12px",
-                                    padding: "16px",
-                                    fontWeight: "500",
-                                    transition: "all 0.2s ease",
-                                    opacity: state.loading ? 0.7 : 1,
-                                }}
-                                onClick={
-                                    state.approved
-                                        ? sendCrossChain
-                                        : handleApprove
-                                }
-                                disabled={
-                                    state.loading ||
-                                    (!state.approved &&
-                                        (!state.amount ||
-                                            state.allowance >=
-                                                parseFloat(state.amount)))
-                                }
-                            >
-                                {state.loading
-                                    ? "Loading..."
-                                    : state.approved
-                                    ? "Bridge Now"
-                                    : "Approve Tokens"}
-                            </Button>
-                        </div>
-
-                        {/* Transaction Link */}
-                        {state.txHash && (
-                            <div
-                                style={{
-                                    marginTop: "1.5rem",
-                                    textAlign: "center",
-                                }}
-                            >
-                                <a
-                                    href={`https://ccip.chain.link/address/${state.address}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                <div
                                     style={{
-                                        color: "#7cf8cb",
-                                        textDecoration: "none",
-                                        fontSize: "0.875rem",
+                                        flex: 1,
+                                        padding: "1rem",
+                                        background: "#212223",
+                                        border: "1px solid #444444",
+                                        borderRadius: "12px",
+                                        marginRight: "0.5rem",
+                                        textAlign: "center",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
                                     }}
                                 >
-                                    View on Explorer ↗
-                                </a>
+                                    <Image
+                                        src="/images/astar_logo.png"
+                                        alt="Astar Logo"
+                                        width={30}
+                                        height={30}
+                                        style={{
+                                            marginBottom: "0.5rem",
+                                        }}
+                                    />
+                                    <div
+                                        style={{
+                                            color: "#94A3B8",
+                                            fontSize: "0.875rem",
+                                            marginTop: "0.5rem",
+                                        }}
+                                    >
+                                        From
+                                    </div>
+                                    <div style={{ fontWeight: "600" }}>Astar</div>
+                                </div>
+
+                                <Icon
+                                    name="arrow right"
+                                    style={{
+                                        alignSelf: "center",
+                                        color: "#64748B",
+                                        margin: "0 0.5rem",
+                                    }}
+                                />
+
+                                <div
+                                    style={{
+                                        flex: 1,
+                                        padding: "1rem",
+                                        background: "#212223",
+                                        border: "1px solid #444444",
+                                        borderRadius: "12px",
+                                        marginLeft: "0.5rem",
+                                        textAlign: "center",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        alignItems: "center",
+                                    }}
+                                >
+                                    <Image
+                                        src="/images/soneium_logo.png"
+                                        alt="Soneium Logo"
+                                        width={30}
+                                        height={30}
+                                        style={{
+                                            marginBottom: "0.5rem",
+                                        }}
+                                    />
+                                    <div
+                                        style={{
+                                            color: "#94A3B8",
+                                            fontSize: "0.875rem",
+                                            marginTop: "0.5rem",
+                                        }}
+                                    >
+                                        To
+                                    </div>
+                                    <div style={{ fontWeight: "600" }}>Soneium</div>
+                                </div>
                             </div>
-                        )}
+
+                            {/* Balance Info */}
+                            <div
+                                style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    marginBottom: "1rem",
+                                    fontSize: "0.875rem",
+                                }}
+                            >
+                                <span style={{ color: "#94A3B8" }}>Available:</span>
+                                <span style={{ fontWeight: "500" }}>
+                                    {state.balance.toFixed(4)} xASTR
+                                </span>
+                            </div>
+
+                            {/* Amount Input */}
+                            <Form>
+                                <div style={{ position: "relative" }}>
+                                    <input
+                                        type="number"
+                                        placeholder="0.0"
+                                        value={state.amount}
+                                        onChange={(e) =>
+                                            setState((prev) => ({
+                                                ...prev,
+                                                amount: e.target.value,
+                                            }))
+                                        }
+                                        style={{
+                                            width: "100%",
+                                            background: "#212223",
+                                            border: "1px solid #444444",
+                                            borderRadius: "12px",
+                                            padding: "16px",
+                                            fontSize: "1.125rem",
+                                            color: "#F8FAFC",
+                                            outline: "none",
+                                            transition: "all 0.2s ease",
+                                        }}
+                                    />
+                                    <button
+                                        style={{
+                                            position: "absolute",
+                                            right: "8px",
+                                            top: "50%",
+                                            transform: "translateY(-50%)",
+                                            background: "rgba(59, 130, 246, 0.1)",
+                                            color: "#939598",
+                                            border: "none",
+                                            borderRadius: "8px",
+                                            padding: "4px 8px",
+                                            fontSize: "0.875rem",
+                                            cursor: "pointer",
+                                        }}
+                                        onClick={async () => {
+                                            setState((prev) => ({
+                                                ...prev,
+                                                amount: prev.balance.toString(),
+                                            }));
+                                            await calculateFee();
+                                        }}
+                                    >
+                                        MAX
+                                    </button>
+                                </div>
+                            </Form>
+
+                            {/* Fee Info */}
+                            <div
+                                style={{
+                                    margin: "1rem 0",
+                                    padding: "1rem",
+                                    background: "#212223",
+                                    border: "1px solid #444444",
+                                    borderRadius: "12px",
+                                    fontSize: "0.875rem",
+                                }}
+                            >
+                                <div
+                                    style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        marginBottom: "0.5rem",
+                                    }}
+                                >
+                                    <span style={{ color: "#94A3B8" }}>
+                                        Estimated Fee:
+                                    </span>
+                                    <span>{state.fee.toFixed(4)} ETH</span>
+                                </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div style={{ display: "grid", gap: "1rem" }}>
+                                <Button
+                                    loading={state.loading && !state.approved}
+                                    style={{
+                                        background: state.approved
+                                            ? "#29ffb2"
+                                            : "#29ffb2",
+                                        color: "black",
+                                        borderRadius: "12px",
+                                        padding: "16px",
+                                        fontWeight: "500",
+                                        transition: "all 0.2s ease",
+                                        opacity: state.loading ? 0.7 : 1,
+                                    }}
+                                    onClick={
+                                        state.approved
+                                            ? sendCrossChain
+                                            : handleApprove
+                                    }
+                                    disabled={
+                                        state.loading ||
+                                        (!state.approved &&
+                                            (!state.amount ||
+                                                state.allowance >=
+                                                    parseFloat(state.amount)))
+                                    }
+                                >
+                                    {state.loading
+                                        ? "Loading..."
+                                        : state.approved
+                                        ? "Bridge Now"
+                                        : "Approve Tokens"}
+                                </Button>
+                            </div>
+
+                            {/* Transaction Link */}
+                            {state.txHash && (
+                                <div
+                                    style={{
+                                        marginTop: "1.5rem",
+                                        textAlign: "center",
+                                    }}
+                                >
+                                    <a
+                                        href={`https://ccip.chain.link/address/${state.address}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{
+                                            color: "#7cf8cb",
+                                            textDecoration: "none",
+                                            fontSize: "0.875rem",
+                                        }}
+                                    >
+                                        View on Explorer ↗
+                                    </a>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>
