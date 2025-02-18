@@ -31,6 +31,7 @@ const Index = () => {
         balance: 0,
         fee: 0,
         networkError: null,
+        showExternalLink: false,
     });
 
     // Memoize functions to prevent unnecessary re-renders
@@ -316,7 +317,6 @@ const Index = () => {
                     }}
                 >
                     <Link href="/" passHref>
-                        {/* Removed <a> tag, using Link to wrap the content */}
                         <Image
                             src="/images/logo.png"
                             alt="Algem Logo"
@@ -639,22 +639,26 @@ const Index = () => {
                                         textAlign: "center",
                                     }}
                                 >
-                                    <Link
-                                        href={`https://ccip.chain.link/address/${state.address}`}
-                                        passHref
+                                    <button
+                                        onClick={() => {
+                                            window.open(
+                                                `https://ccip.chain.link/address/${state.address}`,
+                                                "_blank",
+                                                "noopener,noreferrer"
+                                            );
+                                        }}
+                                        style={{
+                                            color: "#7cf8cb",
+                                            background: "none",
+                                            border: "none",
+                                            padding: 0,
+                                            fontSize: "0.875rem",
+                                            cursor: "pointer",
+                                            textDecoration: "none",
+                                        }}
                                     >
-                                        <a
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            style={{
-                                                color: "#7cf8cb",
-                                                textDecoration: "none",
-                                                fontSize: "0.875rem",
-                                            }}
-                                        >
-                                            View on Explorer ↗
-                                        </a>
-                                    </Link>
+                                        View on Explorer ↗
+                                    </button>
                                 </div>
                             )}
                         </div>
