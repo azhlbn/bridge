@@ -310,8 +310,8 @@ const Index = () => {
             >
                 <div
                     style={{
-                        position: "absolute",
-                        top: "-60px", // Adjust this value to position the logo above the block
+                        position: "relative",
+                        top: "10px", // Adjust this value to position the logo above the block
                         left: "15px", // Aligned with the left edge of the inner block
                         zIndex: 1001, // Higher than error message
                     }}
@@ -329,11 +329,30 @@ const Index = () => {
                         />
                     </Link>
                 </div>
+                {/* Error message */}
+                {state.networkError && (
+                    <div
+                        style={{
+                            position: "relative",
+                            marginTop: "30px",
+                            marginBottom: "0px",
+                            background: "rgba(220, 53, 69, 0.8)",
+                            color: "white",
+                            padding: "1rem",
+                            borderRadius: "20px",
+                            textAlign: "center",
+                            fontWeight: "bold",
+                            zIndex: 1001, // Below logo but above content
+                        }}
+                    >
+                        {state.networkError}
+                    </div>
+                )}
                 <div
                     style={{
                         maxWidth: "480px",
                         margin: "2rem auto",
-                        marginTop: state.networkError ? "7rem" : "5rem", // Adjust margin based on error message visibility
+                        marginTop: state.networkError ? "2rem" : "2rem", // Adjust margin based on error message visibility
                         position: "relative",
                     }}
                 >
@@ -354,22 +373,6 @@ const Index = () => {
                                 boxShadow: "0 8px 32px rgba(0, 0, 0, 0.3)",
                             }}
                         >
-                            {state.networkError && (
-                                <div
-                                    style={{
-                                        background: "rgba(220, 53, 69, 0.8)", // Red background for error
-                                        color: "white",
-                                        padding: "1rem",
-                                        borderRadius: "12px",
-                                        textAlign: "center",
-                                        fontWeight: "bold",
-                                        maxWidth: "480px",
-                                        zIndex: 1000, // Below logo
-                                    }}
-                                >
-                                    {state.networkError}
-                                </div>
-                            )}
                             <h1
                                 style={{
                                     textAlign: "left",
